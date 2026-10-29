@@ -1,1 +1,58 @@
-# -CTF-writeups
+# CTF Writeups
+
+Personal writeups for CTF challenges and lab machines from
+[TryHackMe](https://tryhackme.com), [HackTheBox](https://www.hackthebox.com),
+and [PicoCTF](https://picoctf.org).
+
+> All flags, passwords, and other secrets are redacted. Writeups are published
+> only for content the platform allows to be shared (e.g. retired HackTheBox
+> machines, ended PicoCTF events).
+
+## Index
+
+| Platform  | Name                                          | Difficulty | Category   | Date       |
+| --------- | --------------------------------------------- | ---------- | ---------- | ---------- |
+| TryHackMe | [Pickle Rick](TryHackMe/pickle-rick/README.md) | Easy       | Web, Linux | 2026-10-29 |
+
+<!-- Add new rows at the top of the table so the newest writeup is listed first. -->
+
+## Repository layout
+
+```text
+.
+├── README.md                     # this index
+├── templates/
+│   └── writeup-template.md       # copy this for each new writeup
+├── TryHackMe/
+│   └── <room-slug>/
+│       ├── README.md
+│       └── images/
+├── HackTheBox/
+│   ├── Machines/<machine-name>/
+│   └── Challenges/<category>/<challenge-name>/
+└── PicoCTF/
+    └── <year>/<category>/<challenge-name>/
+```
+
+Each platform folder has its own README with naming conventions.
+
+## Adding a writeup
+
+1. Create the folder for the platform (see layout above), e.g.
+   `HackTheBox/Machines/lame/`.
+2. Copy the template into it as `README.md`:
+
+   ```bash
+   cp templates/writeup-template.md HackTheBox/Machines/lame/README.md
+   ```
+
+3. Put screenshots in an `images/` folder next to it and reference them with
+   relative links: `![nmap scan](images/nmap.png)`.
+4. Redact every flag and secret as `REDACTED`, and crop secrets out of
+   screenshots too.
+5. Add a row to the **Index** table above.
+
+## Disclaimer
+
+These writeups are for educational purposes, covering intentionally vulnerable
+lab environments. Only test systems you own or have explicit permission to test.
