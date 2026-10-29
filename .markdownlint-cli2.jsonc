@@ -1,0 +1,15 @@
+// Markdown style checks for the writeups (run by CI via markdownlint-cli2).
+{
+  "config": {
+    "default": true,
+    // Tables, URLs, and command lines can't be wrapped.
+    "MD013": false,
+    // The metadata table's Link field is a plain URL that ctfw parses;
+    // GitHub autolinks it when rendering.
+    "MD034": false,
+    // Writeups reuse sub-headings like "Initial access" under different sections.
+    "MD024": { "siblings_only": true }
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules/**", "**/*.egg-info/**", ".venv/**", "venv/**"]
+}
