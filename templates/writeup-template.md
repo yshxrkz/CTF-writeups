@@ -31,7 +31,7 @@
 | Tool     | Purpose                         |
 | -------- | ------------------------------- |
 | `nmap`   | Port and service scanning       |
-| `<tool>` | <what you used it for>          |
+| `<tool>` | `<what you used it for>`        |
 
 ---
 
@@ -83,10 +83,10 @@ nmap -sC -sV -oN scans/initial.nmap <TARGET_IP>
 
 ## Lessons Learned
 
-- **What worked:** <technique or habit worth repeating>
-- **What I missed / where I got stuck:** <and what finally unblocked you>
-- **Defensive takeaway:** <how the target should have been configured>
-- **New to me:** <tool, flag, or concept you learned>
+- **What worked:** <!-- technique or habit worth repeating -->
+- **What I missed / where I got stuck:** <!-- and what finally unblocked you -->
+- **Defensive takeaway:** <!-- how the target should have been configured -->
+- **New to me:** <!-- tool, flag, or concept you learned -->
 
 ---
 
