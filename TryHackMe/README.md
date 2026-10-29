@@ -11,5 +11,11 @@ TryHackMe/
 
 Example: `https://tryhackme.com/room/picklerick` → `TryHackMe/pickle-rick/`.
 
+Create one with:
+
+```bash
+ctfw new tryhackme "Pickle Rick" --difficulty easy --category "Web, Linux"
+```
+
 TryHackMe asks that answers and flags for active rooms are not published, so
 keep every flag and secret as `REDACTED`.

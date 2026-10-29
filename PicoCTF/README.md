@@ -11,6 +11,13 @@ PicoCTF/
             └── images/
 ```
 
+Create one with:
+
+```bash
+ctfw new picoctf "Cookies" --year 2021 --category web
+```
+
 Most PicoCTF challenges are single-step, so the **Privilege escalation**
 section of the template can usually be dropped. Redact the `picoCTF{...}`
-flag value, and only publish once the event has ended.
+flag value (`ctfw lint` catches one that slips through), and only publish once
+the event has ended.

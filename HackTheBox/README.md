@@ -15,5 +15,15 @@ HackTheBox/
             └── images/
 ```
 
+Create one with:
+
+```bash
+ctfw new hackthebox "Lame" --kind machine --difficulty easy
+```
+
+```bash
+ctfw new hackthebox "Templated" --kind challenge --category web
+```
+
 Only publish writeups for **retired** machines and challenges. HackTheBox's
 terms forbid sharing solutions for active content.
