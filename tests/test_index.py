@@ -77,13 +77,22 @@ def test_replace_index_only_touches_text_between_markers() -> None:
     assert replace_index(readme, "NEW") == f"before\n{START_MARKER}\nNEW\n{END_MARKER}\nafter\n"
 
 
+def test_replace_index_ignores_markers_mentioned_inline() -> None:
+    readme = (
+        f"Text between `{START_MARKER}` and `{END_MARKER}` is generated.\n"
+        f"{START_MARKER}\nold\n  {END_MARKER}  \n"
+    )
+    assert replace_index(readme, "NEW").endswith(f"{START_MARKER}\nNEW\n  {END_MARKER}  \n")
+
+
 @pytest.mark.parametrize(
     "readme",
     [
         "no markers",
-        f"{START_MARKER} only start",
-        f"{START_MARKER}{START_MARKER}{END_MARKER}",
-        f"{END_MARKER} reversed {START_MARKER}",
+        f"{START_MARKER}\nonly start\n",
+        f"{START_MARKER}\n{START_MARKER}\n{END_MARKER}\n",
+        f"{END_MARKER}\nreversed\n{START_MARKER}\n",
+        f"inline only: {START_MARKER} {END_MARKER}\n",
     ],
 )
 def test_replace_index_rejects_bad_markers(readme: str) -> None:

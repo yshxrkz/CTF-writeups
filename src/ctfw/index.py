@@ -11,6 +11,7 @@ Everything between the markers is regenerated; everything else is untouched.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -65,18 +66,31 @@ def render_index(writeups: Sequence[Writeup]) -> str:
     return "\n".join([line(_HEADERS), separator, *(line(r) for r in rows)])
 
 
+def _marker_line(marker: str) -> re.Pattern[str]:
+    return re.compile(rf"^[ \t]*{re.escape(marker)}[ \t]*$", re.MULTILINE)
+
+
+_START_LINE = _marker_line(START_MARKER)
+_END_LINE = _marker_line(END_MARKER)
+
+
 def replace_index(readme: str, table: str) -> str:
     """Return ``readme`` with the text between the index markers replaced by ``table``.
+
+    Each marker must be on a line of its own, so the README can mention the
+    markers in prose or inline code without confusing the generator.
 
     Raises:
         CtfwError: if the markers are missing, duplicated, or out of order.
     """
-    if readme.count(START_MARKER) != 1 or readme.count(END_MARKER) != 1:
+    starts = list(_START_LINE.finditer(readme))
+    ends = list(_END_LINE.finditer(readme))
+    if len(starts) != 1 or len(ends) != 1:
         raise CtfwError(
-            f"README must contain exactly one {START_MARKER} and one {END_MARKER} marker"
+            f"README must contain exactly one {START_MARKER} and one {END_MARKER} marker, "
+            "each on its own line"
         )
-    start = readme.index(START_MARKER) + len(START_MARKER)
-    end = readme.index(END_MARKER)
+    start, end = starts[0].end(), ends[0].start()
     if end < start:
         raise CtfwError(f"{END_MARKER} appears before {START_MARKER} in README")
     return f"{readme[:start]}\n{table}\n{readme[end:]}"
