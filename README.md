@@ -1,8 +1,12 @@
 # CTF Writeups
 
+[![CI](https://github.com/yshxrkz/CTF-writeups/actions/workflows/ci.yml/badge.svg)](https://github.com/yshxrkz/CTF-writeups/actions/workflows/ci.yml)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
+
 Personal writeups for CTF challenges and lab machines from
 [TryHackMe](https://tryhackme.com), [HackTheBox](https://www.hackthebox.com),
-and [PicoCTF](https://picoctf.org).
+and [PicoCTF](https://picoctf.org), plus **`ctfw`**, a small tool that keeps
+them consistent and stops a flag from ever being published by accident.
 
 > All flags, passwords, and other secrets are redacted. Writeups are published
 > only for content the platform allows to be shared (e.g. retired HackTheBox
@@ -17,43 +21,310 @@ and [PicoCTF](https://picoctf.org).
 | TryHackMe | [Pickle Rick](TryHackMe/pickle-rick/README.md) | Easy       | Web, Linux | 2026-10-29 |
 <!-- index:end -->
 
-## Repository layout
+## Overview
+
+Every writeup follows the same [template](templates/writeup-template.md):
+
+- **Summary**
+- **Tools**
+- **Enumeration**
+- **Exploitation**
+- **Flags** (always redacted)
+- **Lessons Learned**
+
+A metadata table at the top of each one records the platform, difficulty,
+category, and date.
+
+That structure makes the writeups machine-readable, so the repo can check
+itself. `ctfw` (CTF writeups) is a dependency-free Python CLI that:
+
+1. **scaffolds** a new writeup in the right folder,
+2. **generates** the index table above from each writeup's metadata, and
+3. **lints** everything for leaked flags, broken links, and unfinished
+   writeups.
+
+CI runs it on every push and pull request.
+
+## Features
+
+- **Leak guard.** It fails the build on:
+  - flag-format strings such as `THM{…}`, `HTB{…}`, and `picoCTF{…}`
+  - 32-character hex strings (the HackTheBox flag format, and also MD5/NTLM
+    hashes)
+  - any value in a writeup's Flags table that isn't `REDACTED`
+
+  It scans code blocks and scripts too, and never prints the secret it found,
+  so CI logs can't re-leak it.
+- **Generated index.** The README table is rebuilt from metadata, newest
+  first. CI fails if someone forgets to regenerate it.
+- **Safe scaffolding.** `ctfw new` copies the template into the platform's
+  folder layout and pre-fills the metadata. Folder names are reduced to
+  `[a-z0-9-]`, so a name like `../../etc` can't escape the platform folder,
+  and it never overwrites an existing writeup.
+- **Completeness checks.** It catches missing metadata fields, leftover
+  template placeholders, invalid dates or difficulties, missing sections, and
+  relative links or images that point nowhere.
+- **CI-friendly.** Exit codes are `0` (OK), `1` (problems found), and `2`
+  (error). `--format github` shows problems inline on pull requests.
+- **Secrets stay local.** `.gitignore` excludes the things most likely to leak:
+  `*.ovpn` VPN configs (which embed a private key), raw `scans/`, and `loot/`.
+- **Tested.** A pytest suite with 97% branch coverage, plus strict mypy and
+  ruff, runs on Python 3.10 to 3.13.
+
+## Example output
+
+Linting the repo:
+
+```console
+$ ctfw lint
+No problems found (1 writeup, 6 files scanned).
+```
+
+Starting a new writeup:
+
+```console
+$ ctfw new hackthebox "Lame" --kind machine --difficulty easy --category Linux \
+    --os Linux --link https://app.hackthebox.com/machines/Lame
+Created HackTheBox/Machines/lame/README.md
+Next steps:
+  1. Write it up (screenshots go in HackTheBox/Machines/lame/images/)
+  2. ctfw lint     # catches leaked flags and unfilled placeholders
+  3. ctfw index    # adds it to the README index
+```
+
+Lint catching a hash pasted into scan output and a flag that wasn't redacted.
+The secrets themselves are never printed:
+
+```console
+$ ctfw lint
+HackTheBox/Machines/lame/README.md:48: LEAK003 32-character hex string looks like a HackTheBox flag or a password hash; redact it or add 'ctfw: allow-leak' if it is safe
+HackTheBox/Machines/lame/README.md:81: LEAK002 Flags table value is not REDACTED; replace it before publishing
+
+Found 2 problems in 1 file.
+```
+
+Regenerating the index once the writeup is clean:
+
+```console
+$ ctfw index --check
+README.md index is out of date; run `ctfw index` and commit the result.
+$ ctfw index
+Updated README.md index (2 writeups).
+```
+
+```markdown
+| Platform   | Name                                           | Difficulty | Category   | Date       |
+| ---------- | ---------------------------------------------- | ---------- | ---------- | ---------- |
+| HackTheBox | [Lame](HackTheBox/Machines/lame/README.md)     | Easy       | Linux      | 2026-10-29 |
+| TryHackMe  | [Pickle Rick](TryHackMe/pickle-rick/README.md) | Easy       | Web, Linux | 2026-10-29 |
+```
+
+In CI, `--format github` turns each problem into an annotation on the
+offending line of the pull request:
+
+```console
+$ ctfw lint --format github
+::error file=HackTheBox/Machines/lame/README.md,line=47,title=LEAK001::possible unredacted flag HTB{…}; replace the value with REDACTED
+```
+
+## Install
+
+You need Python 3.10 or newer. `ctfw` uses only the standard library; the
+`dev` extra adds pytest, ruff, and mypy.
+
+```bash
+git clone https://github.com/yshxrkz/CTF-writeups.git
+cd CTF-writeups
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+You can also run it without installing, as `PYTHONPATH=src python -m ctfw`.
+
+## Usage
+
+### Writing a new writeup
+
+```bash
+ctfw new tryhackme "Blue" --difficulty easy --category Windows --os Windows \
+    --link https://tryhackme.com/room/blue
+```
+
+Then fill in `TryHackMe/blue/README.md`, put screenshots in
+`TryHackMe/blue/images/` (link them as `![nmap](images/nmap.png)`), and run:
+
+```bash
+ctfw lint
+```
+
+```bash
+ctfw index
+```
+
+Commit when both are clean. CI runs the same checks.
+
+The folder depends on the platform:
+
+| Platform   | Command                                                              | Creates                                 |
+| ---------- | -------------------------------------------------------------------- | --------------------------------------- |
+| TryHackMe  | `ctfw new tryhackme "Pickle Rick"`                                   | `TryHackMe/pickle-rick/`                |
+| HackTheBox | `ctfw new hackthebox "Lame" --kind machine`                          | `HackTheBox/Machines/lame/`             |
+| HackTheBox | `ctfw new hackthebox "Templated" --kind challenge --category web`    | `HackTheBox/Challenges/web/templated/`  |
+| PicoCTF    | `ctfw new picoctf "Cookies" --year 2021 --category web`              | `PicoCTF/2021/web/cookies/`             |
+
+### Commands
+
+| Command                       | What it does                                                        |
+| ----------------------------- | ------------------------------------------------------------------- |
+| `ctfw new PLATFORM NAME [...]` | Create a writeup from the template (see `ctfw new --help`)         |
+| `ctfw index`                  | Regenerate the README index table                                   |
+| `ctfw index --check`          | Exit `1` if the index is stale; don't write anything                |
+| `ctfw lint`                   | Run every check; exit `1` if anything is found                      |
+| `ctfw lint --format github`   | Same, as GitHub Actions annotations                                 |
+| `ctfw --root PATH ...`        | Run against another checkout (default: current directory)           |
+
+### Lint checks
+
+| Code    | Problem                                                                   |
+| ------- | ------------------------------------------------------------------------- |
+| LEAK001 | `THM{…}` / `HTB{…}` / `picoCTF{…}` / `flag{…}` / `CTF{…}` not redacted    |
+| LEAK002 | A value in the `## Flags` table isn't `REDACTED`                          |
+| LEAK003 | A 32-character hex string (HackTheBox flag, or an MD5/NTLM hash)          |
+| META001 | A required metadata field is missing (Platform, Link, Difficulty, Category, Date) |
+| META002 | The title or a field still has the template placeholder                   |
+| META003 | `Platform` doesn't match the folder the writeup is in                     |
+| META004 | `Date` isn't a valid `YYYY-MM-DD` date                                    |
+| META005 | `Difficulty` isn't one of Very Easy, Easy, Medium, Hard, Insane           |
+| META006 | `Link` isn't an `https://` URL                                            |
+| SECT001 | A required `##` section is missing                                        |
+| LINK001 | A relative link or image points to a file that doesn't exist              |
+| LINK002 | A relative link points outside the repository                             |
+| FILE001 | A text file isn't valid UTF-8, so it couldn't be scanned                  |
+
+Some false positives are expected, such as a hash you cracked as part of the
+intended path. Add `ctfw: allow-leak` to that line (an HTML comment
+`<!-- ctfw: allow-leak -->` works in Markdown) to skip the leak checks for it.
+Use it sparingly.
+
+## How it works
+
+```text
+templates/writeup-template.md ──ctfw new──▶ <Platform>/<...>/<slug>/README.md
+                                                     │
+                                  metadata table, ## sections, Flags table
+                                                     │
+                     ┌───────────────────────────────┼────────────────────────────┐
+                     ▼                               ▼                            ▼
+              ctfw index                        ctfw lint                     CI (GitHub Actions)
+     README table between markers     leaks · metadata · sections · links   runs both + tests on every PR
+```
+
+- **Discovery** (`writeup.py`): a writeup is any `README.md` under
+  `TryHackMe/`, `HackTheBox/`, or `PicoCTF/`, except the platform folder's own
+  README. The parser reads the `#` title, the `| **Field** | value |` rows
+  above the first `##` section, and the section headings. It ignores anything
+  inside fenced code blocks, so example Markdown in a writeup can't confuse it.
+- **Index** (`index.py`): renders an aligned table sorted by date (newest
+  first), then platform and title. Pipes in values are escaped. Only the text
+  between the `<!-- index:start -->` and `<!-- index:end -->` lines is
+  replaced (each marker must be on its own line), and the rest of the README is
+  left alone.
+- **Leak detection** (`checks.py`): every line is scanned, including code
+  blocks, because that's where pasted tool output ends up. Everything inside
+  platform folders is scanned, so an `exploit.py` with a hard-coded flag is
+  caught too. Binary files such as screenshots are skipped by sniffing for NUL
+  bytes. A placeholder like `{…}`, `{REDACTED}`, `{<flag>}`, or `{xxxx}` counts
+  as redacted. Reported problems mask the value so the CI log isn't a second
+  leak.
+- **Flags table**: the checker finds the `Value` column of the table under
+  `## Flags` (falling back to the last column) and requires `REDACTED` or
+  empty. This catches flags that don't look like flags, such as Pickle Rick's
+  "ingredients".
+- **Link check**: Markdown links, images, and reference definitions are
+  resolved relative to the file, or to the repo root for a leading `/`, as
+  GitHub does. External URLs and `#anchors` are skipped, and so are links in
+  inline code or code blocks.
+- **Scaffolding** (`scaffold.py`): the name is slugified (Unicode is
+  normalised to ASCII; anything outside `[a-z0-9]` becomes `-`). The resolved
+  path is checked again to make sure it's inside the platform folder before
+  anything is written. The README is opened with mode `"x"`, so an existing
+  file is never overwritten. Values containing `|` or control characters are
+  rejected because they would break the metadata table.
+
+### Repository layout
 
 ```text
 .
-├── README.md                     # this index
+├── README.md                     # this file; the Index section is generated
 ├── templates/
-│   └── writeup-template.md       # copy this for each new writeup
-├── TryHackMe/
-│   └── <room-slug>/
-│       ├── README.md
-│       └── images/
-├── HackTheBox/
-│   ├── Machines/<machine-name>/
-│   └── Challenges/<category>/<challenge-name>/
-└── PicoCTF/
-    └── <year>/<category>/<challenge-name>/
+│   └── writeup-template.md       # what `ctfw new` copies
+├── TryHackMe/<room-slug>/                         # README.md + images/
+├── HackTheBox/Machines/<machine>/
+├── HackTheBox/Challenges/<category>/<challenge>/
+├── PicoCTF/<year>/<category>/<challenge>/
+├── src/ctfw/
+│   ├── cli.py                    # argparse entry point: new | index | lint
+│   ├── writeup.py                # discovery + metadata parsing
+│   ├── index.py                  # README index generation
+│   ├── checks.py                 # leak, metadata, section, and link checks
+│   └── scaffold.py               # path-safe writeup creation
+├── tests/                        # pytest suite (also lints this repo itself)
+├── .github/workflows/ci.yml      # tests on 3.10–3.13 + writeup checks
+└── .markdownlint-cli2.jsonc      # Markdown style rules
 ```
 
 Each platform folder has its own README with naming conventions.
 
-## Adding a writeup
+## Development
 
-1. Create the folder for the platform (see layout above), e.g.
-   `HackTheBox/Machines/lame/`.
-2. Copy the template into it as `README.md`:
+```bash
+pytest --cov
+```
 
-   ```bash
-   cp templates/writeup-template.md HackTheBox/Machines/lame/README.md
-   ```
+```bash
+ruff check .
+```
 
-3. Put screenshots in an `images/` folder next to it and reference them with
-   relative links: `![nmap scan](images/nmap.png)`.
-4. Redact every flag and secret as `REDACTED`, and crop secrets out of
-   screenshots too.
-5. Add a row to the **Index** table above.
+```bash
+ruff format --check .
+```
+
+```bash
+mypy
+```
+
+```bash
+npx --yes markdownlint-cli2@0.18.1
+```
+
+The test suite includes `test_this_repository_passes_lint_and_index_check`,
+which runs `ctfw` against this repo. A leaked flag or a stale index fails the
+tests as well as the CI content job.
+
+## What I learned
+
+- **Redaction needs automation, not willpower.** The easiest way to leak a
+  flag is pasting raw tool output into a code block. Making CI scan code blocks
+  and the Flags table turns "remember to redact" into a check that can't be
+  skipped. Writing it also taught me not to print the secret I'd just found
+  into a public CI log.
+- **Structure pays off.** Once every writeup had the same metadata table and
+  sections, the index could be generated instead of hand-edited, and drift
+  became a failing check instead of something I'd notice months later.
+- **Treat input as hostile, even in my own tools.** Building folder paths from
+  user-typed names is a textbook path traversal. Slugifying the name and then
+  re-checking the resolved path is the same defence in depth I'd expect from a
+  web app.
+- **GitHub hides `<placeholder>` text.** Template placeholders like
+  `<what you used it for>` parse as unknown HTML tags, which GitHub strips, so
+  they rendered as blank cells. markdownlint caught it.
+- **From the boxes themselves:** check the obvious things first (page source,
+  `robots.txt`), a blocklist is a weak defence (`cat` blocked, `less` allowed),
+  and run `sudo -l` before reaching for automated privesc scripts.
 
 ## Disclaimer
 
-These writeups are for educational purposes, covering intentionally vulnerable
-lab environments. Only test systems you own or have explicit permission to test.
+These writeups are for educational purposes and cover intentionally vulnerable
+lab environments. Only test systems you own or have explicit permission to
+test.
