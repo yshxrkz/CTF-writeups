@@ -1,0 +1,31 @@
+# --- Secrets and raw lab material (never publish these) ---
+# TryHackMe / HackTheBox VPN configs embed a private key and certificate.
+*.ovpn
+# Raw tool output and looted files often contain unredacted flags, hashes,
+# or credentials. Paste trimmed, redacted excerpts into the writeup instead.
+scans/
+loot/
+*.kdbx
+id_rsa*
+*.pcap
+*.pcapng
+
+# --- Python tooling ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
